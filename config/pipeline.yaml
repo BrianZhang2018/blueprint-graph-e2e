@@ -1,0 +1,18 @@
+# Pipeline Configuration
+
+# Kafka Configuration
+kafka_bootstrap_servers: "localhost:9092"
+kafka_topic: "security-events"
+kafka_consumer_group: "blueprintgraph-consumer"
+
+# Processing Configuration
+batch_size: 100
+processing_interval_seconds: 5
+
+# Mapping Configuration
+default_source_format: "syslog"
+mapping_rules_path: "config/mapping_rules.yaml"
+
+# Storage Configuration
+store_raw_events: true
+store_mapped_events: true

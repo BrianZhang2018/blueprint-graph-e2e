@@ -1,0 +1,52 @@
+[
+  {
+    "rule_id": "RULE-001",
+    "name": "Multiple Failed Authentication Attempts",
+    "description": "Detects multiple failed authentication attempts from the same source IP address",
+    "severity": 7,
+    "query": "MATCH (src:IP)-[:GENERATED]->(e:Event) WHERE e.class_uid = '0001' AND e.category_uid = '0002' WITH src, count(e) as attempts WHERE attempts > 5 RETURN src, attempts",
+    "tags": ["authentication", "brute-force"],
+    "mitre_techniques": ["T1110"],
+    "enabled": true
+  },
+  {
+    "rule_id": "RULE-002",
+    "name": "Suspicious Process Execution",
+    "description": "Detects execution of suspicious processes",
+    "severity": 8,
+    "query": "MATCH (u:User)-[:PERFORMED]->(e:Event)-[:TARGETS]->(p:Process) WHERE p.name IN ['powershell.exe', 'cmd.exe', 'wscript.exe', 'cscript.exe'] AND e.class_uid = '0003' RETURN u, e, p",
+    "tags": ["process", "execution"],
+    "mitre_techniques": ["T1059"],
+    "enabled": true
+  },
+  {
+    "rule_id": "RULE-003",
+    "name": "Data Exfiltration",
+    "description": "Detects potential data exfiltration based on unusual outbound traffic",
+    "severity": 9,
+    "query": "MATCH (src:Host)-[:GENERATED]->(e:Event)-[:TARGETS]->(dst:IP) WHERE NOT dst.ip STARTS WITH '10.' AND NOT dst.ip STARTS WITH '192.168.' AND e.class_uid = '0004' WITH src, dst, count(e) as conn, sum(e.bytes_out) as total_bytes WHERE total_bytes > 10000000 RETURN src, dst, conn, total_bytes",
+    "tags": ["exfiltration", "network"],
+    "mitre_techniques": ["T1048"],
+    "enabled": true
+  },
+  {
+    "rule_id": "RULE-004",
+    "name": "Privilege Escalation",
+    "description": "Detects potential privilege escalation activities",
+    "severity": 8,
+    "query": "MATCH (u:User)-[:PERFORMED]->(e:Event) WHERE e.class_uid = '0005' AND e.category_uid = '0003' RETURN u, e",
+    "tags": ["privilege-escalation", "user"],
+    "mitre_techniques": ["T1068"],
+    "enabled": true
+  },
+  {
+    "rule_id": "RULE-005",
+    "name": "Lateral Movement",
+    "description": "Detects potential lateral movement between hosts",
+    "severity": 8,
+    "query": "MATCH (src:Host)-[:GENERATED]->(e1:Event)-[:TARGETS]->(u:User), (u)-[:PERFORMED]->(e2:Event)-[:TARGETS]->(dst:Host) WHERE src <> dst AND e1.time < e2.time AND duration.inSeconds(e1.time, e2.time).seconds < 3600 RETURN src, u, dst, e1, e2",
+    "tags": ["lateral-movement", "network"],
+    "mitre_techniques": ["T1021"],
+    "enabled": true
+  }
+]

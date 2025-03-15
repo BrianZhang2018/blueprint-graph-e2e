@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "OCSF Event Schema",
+  "description": "Schema for OCSF events",
+  "required": ["class_uid", "time", "metadata"],
+  "properties": {
+    "class_uid": {
+      "type": "string",
+      "description": "Unique identifier for the event class"
+    },
+    "category_uid": {
+      "type": "string",
+      "description": "Unique identifier for the event category"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time when the event occurred"
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Severity level of the event"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable message describing the event"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["version", "product"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "OCSF schema version"
+        },
+        "product": {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the product that generated the event"
+            },
+            "vendor_name": {
+              "type": "string",
+              "description": "Name of the vendor that created the product"
+            },
+            "version": {
+              "type": "string",
+              "description": "Version of the product"
+            }
+          }
+        }
+      }
+    },
+    "src": {
+      "type": "object",
+      "description": "Source of the event",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the source"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the source (e.g., IP, Host, User)"
+        },
+        "ip": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "IP address of the source"
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Hostname of the source"
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port number of the source"
+        }
+      }
+    },
+    "dst": {
+      "type": "object",
+      "description": "Destination of the event",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the destination"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the destination (e.g., IP, Host, User)"
+        },
+        "ip": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "IP address of the destination"
+        },
+        "hostname": {
+          "type": "string",
+          "description": "Hostname of the destination"
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port number of the destination"
+        }
+      }
+    },
+    "principal": {
+      "type": "object",
+      "description": "Principal (user) associated with the event",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the principal"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the principal (e.g., User, Service)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the principal"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain of the principal"
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "description": "Resources associated with the event",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the resource"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of the resource (e.g., File, Process, Registry)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the resource"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path of the resource"
+          }
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Custom extensions for the event"
+    }
+  }
+}

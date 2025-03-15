@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.13.0
+    container_name: blueprintgraph-neo4j
+    ports:
+      - "7475:7474" # HTTP
+      - "7688:7687" # Bolt
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    environment:
+      - NEO4J_AUTH=neo4j/blueprintgraph
+      - NEO4J_dbms_memory_heap_initial__size=256m
+      - NEO4J_dbms_memory_heap_max__size=512m
+      - NEO4J_dbms_memory_pagecache_size=512m
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: blueprintgraph-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: blueprintgraph-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: blueprintgraph-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: blueprintgraph
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blueprintgraph-api
+    ports:
+      - "8001:8000"
+    volumes:
+      - .:/app
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=blueprintgraph
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC_INPUT=security-events
+      - KAFKA_CONSUMER_GROUP=blueprintgraph-consumer
+      - USE_KAFKA=true
+      - LOG_LEVEL=INFO
+    depends_on:
+      - neo4j
+      - kafka
+    restart: unless-stopped
+    command: [ "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
+
+  kafka-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blueprintgraph-kafka-consumer
+    volumes:
+      - .:/app
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=blueprintgraph
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_TOPIC_INPUT=security-events
+      - KAFKA_CONSUMER_GROUP=blueprintgraph-consumer
+      - LOG_LEVEL=INFO
+    depends_on:
+      - neo4j
+      - kafka
+    restart: unless-stopped
+    command: [ "python", "-m", "src.kafka.consumer" ]
+
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blueprintgraph-pipeline
+    volumes:
+      - .:/app
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=blueprintgraph
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - LOG_LEVEL=INFO
+    depends_on:
+      - neo4j
+    restart: unless-stopped
+    command: [ "python", "-m", "src.pipelines.ingest", "--config", "config/pipeline.yaml" ]
+    profiles:
+      - pipeline
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
